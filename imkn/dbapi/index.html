@@ -359,8 +359,11 @@ public class Student {
 @Entity
 public class Student {
     ...
-    <b>@ManyToOne</b>(name=”SCHOOL_ID”, <b>fetch = FetchType.LAZY</b>>)
+    <b>@ManyToOne</b>(name=”SCHOOL_ID”, <b>fetch = FetchType.LAZY</b>)
     School school;
+
+    <b>@ManyToOne</b>(name=”Man_ID”, <b>fetch = FetchType.EAGER</b>)
+    Man father;
     ...
 }
                         </code>
@@ -500,10 +503,10 @@ public void update(String login) {
                     <pre style="box-shadow:none">
                         <code data-trim data-noescape class="language-java">
 @Transactional
-public List&lt;Student&gt;> listStudents(String name) {
-    List<Student> students = entityManager
+public List&lt;Student&gt; listStudents(String name) {
+    List&lt;Student&gt; students = entityManager
         .createQuery("from " + Student.class.getName()
-            + " where name = :name", Student.class)
+            + " where name like :name", Student.class)
         .setParameter("name", "%" + name + "%")
         .getResultList();
 
@@ -519,9 +522,9 @@ public List&lt;Student&gt;> listStudents(String name) {
                             <code data-trim data-noescape class="language-java">
 @Transactional
 public List&lt;String&gt; listLogins(String name) {
-    List<String> students = entityManager
+    List&lt;String&gt; students = entityManager
         .createNativeQuery("SELECT login FROM students "
-            + " WHERE name = :name")
+            + " WHERE name like :name")
         .setParameter("name", "%" + name + "%")
         .getResultList();
 
@@ -537,11 +540,29 @@ public List&lt;String&gt; listLogins(String name) {
 @Transactional
 public List&lt;Student&gt; listStudentsByName(String name) {
     CriteriaBuilder builder = entityManager.getCriteriaBuilder();
-    CriteriaQuery<Student> query = builder.createQuery(Student.class);
-    Root<Student> from = query.from(Student.class);
-    query.where(builder.equal(from.get("username"), name));
+    CriteriaQuery&lt;Student&gt; query = builder.createQuery(Student.class);
+    Root&lt;Student&gt; from = query.from(Student.class);
+    query.where(builder.equal(from.get("name"), name));
     return entityManager.createQuery(query).getResultList();
 }
+                        </code>
+                    </pre>
+                </section>
+
+                <section>
+                    <h2>Именованные запросы</h2>
+                    <pre style="box-shadow:none">
+                        <code data-trim data-noescape class="language-java">
+@Entity
+@NamedQuery(name="Country.findAll",
+            query="SELECT c FROM Country c")
+public class Country {
+    ...
+}
+
+TypedQuery&lt;Country&gt; query =
+    em.createNamedQuery("Country.findAll", Country.class);
+List&lt;Country&gt; results = query.getResultList();
                         </code>
                     </pre>
                 </section>
@@ -609,9 +630,9 @@ class Student {
                 <section>
                     <h2>Задачи</h2>
                     <ul>
-                        <li>БЫСТРОЕ получение соединений</li>
-                        <li>Количество соединений (минимальное, максимальное)</li>
                         <li>Подготовка новых соединений</li>
+                        <li>БЫСТРОЕ получение соединений из пула</li>
+                        <li>Контроль количества соединений в пуле</li>
                         <li>Контроль ошибок при возврате в пул</li>
                     </ul>
                 </section>
@@ -721,20 +742,6 @@ List&lt;Task&gt; findFirst3ByCreatedByUser(User user, Sort sort);
 @Query("select t from Task t where t.number IN (:numbers)")
 List&lt;Task&gt; findByNumberIn(
              @Param("numbers") Collection&lt;String&gt; numbers);
-                        </code>
-                    </pre>
-                </section>
-
-                <section>
-                    <h2>Именованные запросы</h2>
-                    <pre style="box-shadow:none">
-                        <code data-trim data-noescape class="language-java">
-@Entity
-@NamedQuery(name = "Task.findAssignedTasks",
- query = "select t from Task t where t.assignedToUser is not null")
-public class Task {
-    ...
-}
                         </code>
                     </pre>
                 </section>
