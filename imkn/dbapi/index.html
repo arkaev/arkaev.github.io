@@ -97,7 +97,7 @@ Connection conn = DriverManager.getConnection(
                         <code data-trim data-noescape class="language-java">
 Statement stmt = conn.createStatement();
 stmt.executeUpdate(
-    "INSERT INTO MyTable( name ) VALUES ( 'my name' ) " );
+    "INSERT INTO student( login, name ) VALUES ( 'some_login', 'my name' ) " );
                         </code>
                     </pre>
                 </section>
@@ -107,13 +107,13 @@ stmt.executeUpdate(
                     <pre style="box-shadow:none">
                         <code data-trim data-noescape class="language-java">
 Statement stmt = conn.createStatement();
-ResultSet rs = stmt.executeQuery("SELECT * FROM users");
+ResultSet rs = stmt.executeQuery("SELECT * FROM student");
 
 while (rs.next()) {
    System.out.println(
        rs.getRow() + ". " +
-       rs.getString("firstname") + " " +
-       rs.getString("lastname"));
+       rs.getString("login") + " " +
+       rs.getString("name"));
 }
                         </code>
                     </pre>
@@ -124,9 +124,9 @@ while (rs.next()) {
                     <pre style="box-shadow:none">
                         <code data-trim data-noescape class="language-java">
 Statement stmt = conn.createStatement();
-ResultSet rs = stmt.executeQuery( "SELECT * FROM MyTable" );
+ResultSet rs = stmt.executeQuery( "SELECT * FROM student" );
 while ( rs.next() ) {
-   int numColumns = rs.getMetaData().getColumnCount();
+   int numColumns = <b>rs.getMetaData()</b>.getColumnCount();
    for ( int i = 1 ; i <= numColumns ; i++ ) {
        System.out.println("COLUMN " + i + " = " + rs.getObject(i));
    }
@@ -140,9 +140,9 @@ while ( rs.next() ) {
                     <pre style="box-shadow:none">
                         <code data-trim data-noescape class="language-java">
 PreparedStatement ps =
-   conn.prepareStatement("SELECT firstname " +
-       " FROM users WHERE lastname = ?");
-ps.setString(1, "Kent");
+   conn.prepareStatement("SELECT login " +
+       " FROM users WHERE name = ?");
+<b>ps.setString(1, "Kent");</b>
 
 ResultSet rs = ps.executeQuery();
 while (rs.next()) {
@@ -168,13 +168,6 @@ try(Connection conn = DriverManager.getConnection(
                 </section>
 
                 <section>
-                    <h2>Типы свойств</h2>
-                    <ul>
-                        <li>TODO</li>
-                    </ul>
-                </section>
-
-                <section>
                     <h2>Транзакции</h2>
                     <pre style="box-shadow:none">
                         <code data-trim data-noescape class="language-java">
@@ -196,7 +189,15 @@ try {
                     <h2>Массовые операции</h2>
                     <pre style="box-shadow:none">
                         <code data-trim data-noescape class="language-java">
-TODO Batching
+String sql = "insert into employee (login, name) values (?, ?)";
+PreparedStatement ps = connection.prepareStatement(sql);
+
+for (Student st: students) {
+    ps.setString(1, st.getLogin());
+    ps.setString(2, st.getName());
+    <b>ps.addBatch();</b>
+}
+<b>ps.executeBatch();</b>
                         </code>
                     </pre>
                 </section>
@@ -260,12 +261,11 @@ TODO Batching
                     <h2>Entity</h2>
                     <pre style="box-shadow:none">
                         <code data-trim data-noescape class="language-java">
-@Entity
+<b>@Entity</b>
 public class User {
-   String login;
-   String firstName;
-   String lastName;
-
+    String login;
+    String name;
+    School school;
    ...
 }
                         </code>
@@ -273,12 +273,11 @@ public class User {
                 </section>
 
                 <section>
-                    <h2>Entity</h2>
-                    <h2>Типы данных в БД</h2>
+                    <h2>Требования к Entity</h2>
                     <ol type="1">
                         <li>легковесный объект</li>
                         <li>обычно, представление таблицы в реляционной БД</li>
-                        <li>должен удовлетворять ограничениям
+                        <li>удовлетворяет ограничениям
                             <ul>
                                 <li>должен быть конструктор без аргументов</li>
                                 <li>класс не должен быть помечен как <b>final</b></li>
@@ -292,41 +291,55 @@ public class User {
                     <pre style="box-shadow:none">
                         <code data-trim data-noescape class="language-java">
 @Entity
-public class User {
-@Id
-   String login;
-   String firstName;
-   String lastName;
-
+public class Student {
+    <b>@Id</b>
+    String login;
+    String name;
+    School school;
+    ...
+}
                         </code>
                     </pre>
                 </section>
 
                 <section>
-                    <h2>Названия в БД</h2>
+                    <h2>Имена в БД</h2>
                     <pre style="box-shadow:none">
                         <code data-trim data-noescape class="language-java">
 @Entity
-@Table(name = “USERS”)
-public class User {
+@Table(name = "STUDENT")
+public class Student {
     @Id
+    <b>@Column(name=”STUDENT_LOGIN”, length = 32)</b>
     String login;
 
-    @Column(name=”FULL_NAME”)
-    String mame;
+    <b>@Column(name=”FULL_NAME”)</b>
+    String name;
 
-    @ManyToOne(name=”MANAGER_ID”)
-    Manager manager;
+    School school;
                         </code>
                     </pre>
                 </section>
 
                 <section>
-                    <h2>Типы данных</h2>
+                    <h2>Сохранение даты/времени</h2>
                     <ul>
-                        <li>Дата/время</li>
-                        <li>TODO</li>
+                        <li>@Temporal(TemporalType.DATE)</li>
+                        <li>@Temporal(TemporalType.TIME)</li>
+                        <li>@Temporal(TemporalType.TIMESTAMP)</li>
                     </ul>
+
+                    <pre style="box-shadow:none">
+                        <code data-trim data-noescape class="language-java">
+@Entity
+public class Student {
+    ...
+    <b>@Temporal(TemporalType.TIMESTAMP)</b>
+    Date creationDate;
+    ...
+}
+                        </code>
+                        </pre>
                 </section>
 
                 <section>
@@ -343,7 +356,13 @@ public class User {
                     <h2>Маппинг Many-To-One</h2>
                     <pre style="box-shadow:none">
                         <code data-trim data-noescape class="language-java">
-TODO
+@Entity
+public class Student {
+    ...
+    <b>@ManyToOne</b>(name=”SCHOOL_ID”, <b>fetch = FetchType.LAZY</b>>)
+    School school;
+    ...
+}
                         </code>
                     </pre>
                 </section>
@@ -372,9 +391,11 @@ TODO
                         <code data-trim data-noescape class="language-java">
 @PersistenceUnit
 EntityManagerFactory emf;
-EntityManager em = emf.createEntityManager();
+EntityManager em = <b>emf.createEntityManager()</b>;
 
-@PersistenceContext
+или
+
+<b>@PersistenceContext</b>
 EntityManager em;
                         </code>
                     </pre>
@@ -383,8 +404,26 @@ EntityManager em;
                 <section>
                     <h2 style="text-transform:none">persistence.xml</h2>
                     <pre style="box-shadow:none">
-                        <code data-trim data-noescape class="language-java">
-TODO
+                            <code data-trim data-noescape class="language-xml">
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;
+&lt;persistence&gt;
+    &lt;persistence-unit name=&quot;my-pu&quot;&gt;
+        &lt;description&gt;My Persistence Unit&lt;/description&gt;
+        &lt;provider&gt;
+            org.hibernate.jpa.HibernatePersistenceProvider
+        &lt;/provider&gt;
+        &lt;class&gt;sample.Student&lt;/class&gt;
+        &lt;class&gt;sample.School&lt;/class&gt;
+        &lt;properties&gt;
+            &lt;property name=&quot;javax.persistence.jdbc.url&quot;
+                value=&quot;jdbc:postgresql://localhost:5432/somedb&quot;/&gt;
+            &lt;property name=&quot;javax.persistence.jdbc.user&quot; 
+                value=&quot;name&quot;/&gt;
+            &lt;property name=&quot;javax.persistence.jdbc.password&quot; 
+                value=&quot;pass&quot;/&gt;
+        &lt;/properties&gt;
+    &lt;/persistence-unit&gt;
+&lt;/persistence&gt;
                         </code>
                     </pre>
                 </section>
@@ -393,16 +432,48 @@ TODO
                     <h2>Сохранение</h2>
                     <pre style="box-shadow:none">
                         <code data-trim data-noescape class="language-java">
-TODO
+@PersistenceContext
+private EntityManager entityManager;
+
+@Transactional
+public void insert() {
+    School school = new School(1, "Школа №1");
+    Student student = new Student("pupkin", "Вася пупкин", school);
+
+    entityManager.persist(school);
+    entityManager.persist(student);
+}
                         </code>
                     </pre>
+                </section>
+
+                <section>
+                        <h2>Поиск</h2>
+                        <pre style="box-shadow:none">
+                            <code data-trim data-noescape class="language-java">
+@PersistenceContext
+private EntityManager entityManager;
+
+@Transactional
+public Student find(String login) {
+    return entityManager.find(Student.class, "pupkin");
+}
+                            </code>
+                        </pre>
                 </section>
 
                 <section>
                     <h2>Удаление</h2>
                     <pre style="box-shadow:none">
                         <code data-trim data-noescape class="language-java">
-TODO
+@PersistenceContext
+private EntityManager entityManager;
+
+@Transactional
+public void delete(String login) {
+    Student student = find(login);
+    entityManager.remove(student);
+}
                         </code>
                     </pre>
                 </section>
@@ -411,32 +482,68 @@ TODO
                     <h2>Обновление</h2>
                     <pre style="box-shadow:none">
                         <code data-trim data-noescape class="language-java">
-TODO
-                        </code>
-                    </pre>
-                </section>
+@PersistenceContext
+private EntityManager entityManager;
 
-                <section>
-                    <h2>Поиск</h2>
-                    <pre style="box-shadow:none">
-                        <code data-trim data-noescape class="language-java">
-TODO
+@Transactional
+public void update(String login) {
+    Student student = find(login);
+    student.setName("Петров");
+    entityManager.merge(student);
+}
                         </code>
                     </pre>
                 </section>
 
                 <section>
                     <h2>JPQL</h2>
-                    <ul>
-                        <li>TODO</li>
-                    </ul>
+                    <pre style="box-shadow:none">
+                        <code data-trim data-noescape class="language-java">
+@Transactional
+public List&lt;Student&gt;> listStudents(String name) {
+    List<Student> students = entityManager
+        .createQuery("from " + Student.class.getName()
+            + " where name = :name", Student.class)
+        .setParameter("name", "%" + name + "%")
+        .getResultList();
+
+    return students;
+}
+                        </code>
+                    </pre>
                 </section>
 
                 <section>
                     <h2 style="text-transform:none">NativeQuery</h2>
-                    <ul>
-                        <li>TODO</li>
-                    </ul>
+                    <pre style="box-shadow:none">
+                            <code data-trim data-noescape class="language-java">
+@Transactional
+public List&lt;String&gt; listLogins(String name) {
+    List<String> students = entityManager
+        .createNativeQuery("SELECT login FROM students "
+            + " WHERE name = :name")
+        .setParameter("name", "%" + name + "%")
+        .getResultList();
+
+    return students;
+}
+                        </code>
+                    </pre>
+                </section>
+                <section>
+                    <h2 style="text-transform:none">JPA Criteria</h2>
+                    <pre style="box-shadow:none">
+                            <code data-trim data-noescape class="language-java">
+@Transactional
+public List&lt;Student&gt; listStudentsByName(String name) {
+    CriteriaBuilder builder = entityManager.getCriteriaBuilder();
+    CriteriaQuery<Student> query = builder.createQuery(Student.class);
+    Root<Student> from = query.from(Student.class);
+    query.where(builder.equal(from.get("username"), name));
+    return entityManager.createQuery(query).getResultList();
+}
+                        </code>
+                    </pre>
                 </section>
 
                 <section>
@@ -445,13 +552,11 @@ TODO
                         <li>type safe</li>
                         <li>динамичные запросы</li>
                         <li>оверхед</li>
-                        <li>TODO</li>
                     </ul>
                 </section>
 
                 <section>
                     <h2>Кэши</h2>
-                    <h5>@Cacheable</h5>
                     <ul>
                         <li>ehcache</li>
                         <li>oscache</li>
@@ -459,6 +564,19 @@ TODO
                         <li>...</li>
                     </ul>
                 </section>
+
+                <section>
+                        <h2 style="text-transform:none">@Cacheable</h2>
+                        <pre style="box-shadow:none">
+                                <code data-trim data-noescape class="language-java">
+@Entity
+@Cacheable
+class Student {
+    ...
+}
+                            </code>
+                        </pre>
+                    </section>
 
                 <section>
                     <h2>Уровни кэшей</h2>
